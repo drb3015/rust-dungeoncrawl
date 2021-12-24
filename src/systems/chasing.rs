@@ -25,38 +25,37 @@ pub fn chasing(#[resource] map: &Map, ecs: &SubWorld, commands: &mut CommandBuff
             } else {
                 *player_pos
             };
-        }
-    });
+            let mut attacked = false;
+            positions
+                .iter(ecs)
+                .filter(|(_, target_pos, _)| **target_pos == destination)
+                .for_each(|(victim, _, _)| {
+                    if ecs
+                        .entry_ref(*victim)
+                        .unwrap()
+                        .get_component::<Player>()
+                        .is_ok()
+                    {
+                        commands.push((
+                            (),
+                            WantsToAttack {
+                                attacker: *entity,
+                                victim: *victim,
+                            },
+                        ));
+                    }
+                    attacked = true;
+                });
 
-    let mut attacked = false;
-    positions
-        .iter(ecs)
-        .filter(|(_, target_pos, _)| **target_pos == destination)
-        .for_each(|(victim, _, _)| {
-            if ecs
-                .entry_ref(*victim)
-                .unwrap()
-                .get_component::<Player>()
-                .is_ok()
-            {
+            if !attacked {
                 commands.push((
                     (),
-                    WantsToAttack {
-                        attacker: *entity,
-                        victim: *victim,
+                    WantsToMove {
+                        entity: *entity,
+                        destination,
                     },
                 ));
             }
-            attacked = true;
-        });
-
-    if !attacked {
-        commands.push((
-            (),
-            WantsToMove {
-                entity: *entity,
-                destination,
-            },
-        ));
-    }
+        }
+    });
 }
